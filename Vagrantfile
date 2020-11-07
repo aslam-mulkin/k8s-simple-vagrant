@@ -4,29 +4,29 @@
 servers = [
 
 	 {
-				:name => "master",
-				:type => "master",
-				:box => "ubuntu/bionic64",
-				:eth1 => "192.168.200.10",
-				:mem => "2048",
-				:cpu => "2"
-		},
-		{
-				:name => "node-1",
-				:type => "node",
-				:box => "ubuntu/bionic64",
-				:eth1 => "192.168.200.11",
-				:mem => "2048",
-				:cpu => "2"
-		},
-		{
-				:name => "node-2",
-				:type => "node",
-				:box => "ubuntu/bionic64",
-				:eth1 => "192.168.200.12",
-				:mem => "2048",
-				:cpu => "2"
-		}
+		:name => "master",
+		:type => "master",
+		:box => "ubuntu/bionic64",
+		:eth1 => "192.168.200.10",
+		:mem => "2048",
+		:cpu => "2"
+	},
+	{
+		:name => "node-1",
+		:type => "node",
+		:box => "ubuntu/bionic64",
+		:eth1 => "192.168.200.11",
+		:mem => "2048",
+		:cpu => "2"
+	},
+	{
+		:name => "node-2",
+		:type => "node",
+		:box => "ubuntu/bionic64",
+		:eth1 => "192.168.200.12",
+		:mem => "2048",
+		:cpu => "2"
+	}
 ]
 
 $configureBox = <<-SCRIPT
