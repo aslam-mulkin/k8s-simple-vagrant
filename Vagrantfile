@@ -32,6 +32,20 @@ servers = [
 $configureBox = <<-SCRIPT
 
 	#Script for all nodes
+	#Edit /etc/hosts
+	echo -e '192.168.200.10\tmaster\n192.168.200.11\tnode-1\n192.168.200.12\tnode-2\n' | tee -a /etc/hosts
+
+  #Configure Firewall
+	modprobe overlay
+	modprobe br_netfilter
+
+  cat > /etc/sysctl.d/kubernetes.conf <<EOF
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_forward = 1
+EOF
+
+	sysctl --system
 
 	#Turn off swap
 	swapoff -a
@@ -39,7 +53,6 @@ $configureBox = <<-SCRIPT
 
 	#Install dependencies
 	apt-get update && apt-get install -y docker.io apt-transport-https curl
-
 
 	# Setup docker daemon.
 	cat > /etc/docker/daemon.json <<EOF
@@ -66,13 +79,6 @@ EOF
 	apt-get update && apt-get install -y kubeadm kubelet kubectl
 	apt-mark hold kubeadm kubelet kubectl
 
-	# ip of this box
-	IP_ADDR=$(ip -4 addr show enp0s8 | grep -oP "(?<=inet ).*(?=/)")
-	# set node-ip
-	sed -i "/^[^#]*KUBELET_EXTRA_ARGS=/c\KUBELET_EXTRA_ARGS=--node-ip=$IP_ADDR" /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-	systemctl daemon-reload
-	systemctl restart kubelet
-
 SCRIPT
 
 $configureMaster = <<-SCRIPT
@@ -93,8 +99,15 @@ $configureMaster = <<-SCRIPT
 	chown $(id -u vagrant):$(id -g vagrant) /home/vagrant/.kube/config
 	export KUBECONFIG=/home/vagrant/.kube/config
 
+	# set node-ip so it run on vm private network instead of nat network
+	sed -i "/^\[Service\]/a Environment=\"KUBELET_EXTRA_ARGS=--node-ip=$IP_ADDR\"" /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+	systemctl daemon-reload
+	systemctl restart kubelet
+
 	#Use flannel as network
-	kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+	#kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+	#Use calico as network
+	kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
 
 SCRIPT
 
@@ -102,6 +115,11 @@ $configureNode = <<-SHELL
 
 	echo "This is worker node"
 	bash /vagrant/join.sh
+
+	# ip of this box
+	IP_ADDR=$(ip -4 addr show enp0s8 | grep -oP "(?<=inet ).*(?=/)")
+	# set node-ip so it run on vm private network instead of nat network
+	sed -i "/^\[Service\]/a Environment=\"KUBELET_EXTRA_ARGS=--node-ip=$IP_ADDR\"" /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
 	systemctl daemon-reload
 	systemctl restart kubelet
 
