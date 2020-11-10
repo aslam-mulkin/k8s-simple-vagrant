@@ -54,6 +54,9 @@ EOF
 	#Install dependencies
 	apt-get update && apt-get install -y docker.io apt-transport-https curl
 
+	#Add vagrant user to docker group
+  usermod -aG docker vagrant
+
 	# Setup docker daemon.
 	cat > /etc/docker/daemon.json <<EOF
 	{
