@@ -12,7 +12,6 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.4/a
 kubectl patch svc -n kubernetes-dashboard kubernetes-dashboard  -p '{"spec": {"type": "NodePort"}}'
 
 #Create admin user for dashboard
-#kubectl apply -f /vagrant/k8s-dashboard-admin.yml
 kubectl apply -f /vagrant/dashboard-admin.yml
 
 # Get IP of first master
