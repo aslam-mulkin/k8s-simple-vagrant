@@ -7,4 +7,7 @@ Simple kubernetes cluster on vagrant
 - node-2: 192.168.200.12
 
 ## To Deploy Kubernetes Dashboard
-`bash /vagrant/deploy_dashboard.sh`
+```bash
+vagrant ssh master
+bash /vagrant/deploy_dashboard.sh
+```
