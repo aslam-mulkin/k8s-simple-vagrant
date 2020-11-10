@@ -35,7 +35,7 @@ $configureBox = <<-SCRIPT
 	#Edit /etc/hosts
 	echo -e '192.168.200.10\tmaster\n192.168.200.11\tnode-1\n192.168.200.12\tnode-2\n' | tee -a /etc/hosts
 
-  #Configure Firewall
+  	#Configure Firewall
 	modprobe overlay
 	modprobe br_netfilter
 
@@ -55,7 +55,7 @@ EOF
 	apt-get update && apt-get install -y docker.io apt-transport-https curl
 
 	#Add vagrant user to docker group
-  usermod -aG docker vagrant
+  	usermod -aG docker vagrant
 
 	# Setup docker daemon.
 	cat > /etc/docker/daemon.json <<EOF
