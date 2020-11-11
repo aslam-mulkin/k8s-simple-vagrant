@@ -35,7 +35,12 @@ $configureBox = <<-SCRIPT
 	#Edit /etc/hosts
 	echo -e '192.168.200.10\tmaster\n192.168.200.11\tnode-1\n192.168.200.12\tnode-2\n' | tee -a /etc/hosts
 
-  	#Configure Firewall
+	# Change SSH Configuration
+	sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+  echo "    StrictHostKeyChecking no" >> /etc/ssh/ssh_config
+  systemctl restart sshd.service
+
+  #Configure Firewall
 	modprobe overlay
 	modprobe br_netfilter
 
@@ -52,10 +57,10 @@ EOF
 	sed -i '/swap/d' /etc/fstab
 
 	#Install dependencies
-	apt-get update && apt-get install -y docker.io apt-transport-https curl
+	apt-get update && apt-get install -y docker.io apt-transport-https curl sshpass
 
-	#Add vagrant user to docker group
-  	usermod -aG docker vagrant
+  #Add vagrant user to docker group
+  usermod -aG docker vagrant
 
 	# Setup docker daemon.
 	cat > /etc/docker/daemon.json <<EOF
@@ -90,12 +95,16 @@ $configureMaster = <<-SCRIPT
 	IP_ADDR=$(ip -4 addr show enp0s8 | grep -oP "(?<=inet ).*(?=/)")
 	HOST_NAME=$(hostname -s)
 
-	OUTPUT_FILE=/vagrant/join.sh
-	rm -rf /vagrant/join.sh
+	OUTPUT_FILE=/home/vagrant/join.sh
 
 	kubeadm init --apiserver-advertise-address=$IP_ADDR --apiserver-cert-extra-sans=$IP_ADDR  --node-name $HOST_NAME --pod-network-cidr=10.244.0.0/16
-	kubeadm token create --print-join-command > /vagrant/join.sh
+	kubeadm token create --print-join-command > $OUTPUT_FILE
 	chmod +x $OUTPUT_FILE
+
+  # Generate SSH key and distribute it to other hosts
+	sudo --user=vagrant cat /dev/zero | ssh-keygen -q -N ""
+  sudo --user=vagrant for server in master node-1 node-2; do sshpass -p "vagrant" ssh-copy-id -i ~/.ssh/id_rsa.pub vagrant@$server; done
+  sudo --user=vagrant for server in node-1 node-2; do scp $OUTPUT_FILE vagrant@$server:/home/vagrant/; done
 
 	sudo --user=vagrant mkdir -p /home/vagrant/.kube
 	cp -i /etc/kubernetes/admin.conf /home/vagrant/.kube/config
@@ -117,7 +126,7 @@ SCRIPT
 $configureNode = <<-SHELL
 
 	echo "This is worker node"
-	bash /vagrant/join.sh
+	bash /home/vagrant/join.sh
 
 	# ip of this box
 	IP_ADDR=$(ip -4 addr show enp0s8 | grep -oP "(?<=inet ).*(?=/)")
